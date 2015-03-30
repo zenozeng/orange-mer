@@ -6,7 +6,7 @@
  * @param {Number} w - Width
  * @param {Number} h - Height
  * @param {Function} test - Test function, test([this, top, right, bottom, left]) (each is canvasPixelIndex), should return bool
- * @param {Function} op - Will call op(canvasPixelIndex), if test passed
+ * @param {Function} op - Will call op(x, y), if test passed
  */
 var floodFill = function(x, y, w, h, test, op) {
 
@@ -40,10 +40,8 @@ var floodFill = function(x, y, w, h, test, op) {
             return (pixel.y * w + pixel.x - 1) * 4;
         }).concat(canvasPixelIndex));
 
-        console.log(x, y, ret);
-
         if (ret) {
-            op(canvasPixelIndex);
+            op({x: x, y: y});
             neighbors.forEach(function(pixel) {
                 var key = JSON.stringify(pixel);
                 if (!mem[key]) {
@@ -61,9 +59,9 @@ var floodFill = function(x, y, w, h, test, op) {
  *
  * @param {Canvas} canvas - The canvas to detect orange
  * @param {Bool} putImageData - Whether to put image data on canvas
- * @returns {ImageData} Binarized ImageData (S > 50% ? alpha=1 : alpha=0.8)
+ * @returns {Array} Array of orange area [{x, y}] (S > 50% & Lightness > 10)
  */
-var binarization = function(canvas, putImageData) {
+var getOrangeEdge = function(canvas, putImageData) {
     // get pixels
     var ctx = canvas.getContext('2d');
     var data = ctx.getImageData(0, 0, canvas.width, canvas.height);
@@ -78,24 +76,22 @@ var binarization = function(canvas, putImageData) {
         var s = hsl[1];
         var l = hsl[2];
         if (s > 30 && l > 5) {
-            pixels[i+3] = 255;
+            pixels[i+3] = 255; // mark target area
         } else {
-            // pixels[i+3] = 255 * 0.2;
-            pixels[i+3] = 0;
+            pixels[i+3] = 254;
         }
     }
 
-    // flood fill
+    // use flood fill to get orange area
     var test = function(_pixels) {
         return _pixels.every(function(i) {
             var alpha = pixels[i + 3];
             return alpha === 255;
         });
     };
-    var op = function(index) {
-        pixels[index] = 255; // update R
-        // pixels[index + 1] = 0; // update G
-        // pixels[index + 2] = 0; // update B
+    var orange = [];
+    var op = function(p) {
+        orange.push(p);
     };
     floodFill(parseInt(canvas.width / 2),
               parseInt(canvas.height / 2),
@@ -104,9 +100,67 @@ var binarization = function(canvas, putImageData) {
               test,
               op);
 
+    // get edge points by y
+    var _edge = {};
+    orange.forEach(function(p) {
+        var x = p.x,
+            y = p.y;
+        if (_edge[y]) {
+            if (x < _edge[y].min) {
+                _edge[y].min = x;
+            }
+            if (x > _edge[y].max) {
+                _edge[y].max = x;
+            }
+        } else {
+            _edge[y] = {min: x, max: x};
+        }
+    });
+    var edge = [];
+    for(var y in _edge) {
+        edge.push({y: y, x: _edge[y].min});
+        edge.push({y: y, x: _edge[y].max});
+    }
+
+    // get edge points by x
+    _edge = {};
+    orange.forEach(function(p) {
+        var x = p.x,
+            y = p.y;
+        if (_edge[x]) {
+            if (y < _edge[x].min) {
+                _edge[x].min = y;
+            }
+            if (y > _edge[x].max) {
+                _edge[x].max = y;
+            }
+        } else {
+            _edge[x] = {min: y, max: y};
+        }
+    });
+    for(var x in _edge) {
+        edge.push({x: x, y: _edge[x].min});
+        edge.push({x: x, y: _edge[x].max});
+    }
+
+    console.log(JSON.stringify(edge, null, 4));
+
+    // mark edges
+    edge.map(function(p) {
+        return (p.y * canvas.width + p.x - 1) * 4;
+    }).forEach(function(p) {
+        pixels[p] = 255;
+        pixels[p + 1] = 255;
+        pixels[p + 2] = 255;
+        pixels[p + 3] = 255;
+    });
+
     if (putImageData) {
         ctx.putImageData(data, 0, 0);
     }
+
+
+    return edge;
 };
 
 
@@ -136,13 +190,13 @@ var displayImageWithMER = function(filename) {
     var image = new Image();
     image.src = filename;
     var canvas = document.createElement('canvas');
-    canvas.width = 332;
-    canvas.height = 302;
+    canvas.width = 332 / 2;
+    canvas.height = 302 / 2;
     document.body.appendChild(canvas);
     image.onload = function() {
         var ctx = canvas.getContext('2d');
         ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
-        binarization(canvas, true);
+        getOrangeEdge(canvas, true);
     };
 };
 
@@ -158,6 +212,6 @@ for(var i = 1; i <= 10; i++) {
 // }
 
 displayImageWithMER(targets.shift());
-displayImageWithMER(targets.shift());
+// displayImageWithMER(targets.shift());
 
 
