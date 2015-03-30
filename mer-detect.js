@@ -54,8 +54,8 @@ var floodFill = function(x, y, w, h, test, op) {
 };
 
 /**
- * Binarization
- * 此方法利用图像的 HSL 分量实现选择区域，S > 50% 标记为目标区域
+ * getOrangeEdge
+ * 此方法利用图像的 HSL 分量实现选择区域
  *
  * @param {Canvas} canvas - The canvas to detect orange
  * @param {Bool} putImageData - Whether to put image data on canvas
@@ -144,8 +144,6 @@ var getOrangeEdge = function(canvas, putImageData) {
         edge.push({x: x, y: _edge[x].max});
     }
 
-    console.log(JSON.stringify(edge, null, 4));
-
     // mark edges
     edge.map(function(p) {
         return (parseInt(p.y) * canvas.width + parseInt(p.x) - 1) * 4;
@@ -160,7 +158,6 @@ var getOrangeEdge = function(canvas, putImageData) {
         ctx.putImageData(data, 0, 0);
     }
 
-
     return edge;
 };
 
@@ -170,9 +167,9 @@ var getOrangeEdge = function(canvas, putImageData) {
  * Note: (0, 0) was located in the center of image
  *
  * @param {Canvas} canvas - The canvas to calcuate MER
- * @returns {Object} {top, right, bottom, left}
+ * @returns {Array} Four points indicate MER
  */
-var calcMER = function(canvas) {
+var calcMER = function(edgePoints) {
     // Init
     var ctx = canvas.getContext('2d');
 
@@ -197,7 +194,7 @@ var displayImageWithMER = function(filename) {
     image.onload = function() {
         var ctx = canvas.getContext('2d');
         ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
-        getOrangeEdge(canvas, true);
+        var edgePoints = getOrangeEdge(canvas, true);
     };
 };
 
@@ -213,6 +210,6 @@ for(var i = 1; i <= 10; i++) {
 // }
 
 displayImageWithMER(targets.shift());
-// displayImageWithMER(targets.shift());
+displayImageWithMER(targets.shift());
 
 
