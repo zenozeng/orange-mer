@@ -102,6 +102,8 @@ var getOrangeEdge = function(canvas, putImageData) {
 
     // get edge points by y
     var _edge = {};
+    var edge = [];
+
     orange.forEach(function(p) {
         var x = p.x,
             y = p.y;
@@ -116,7 +118,6 @@ var getOrangeEdge = function(canvas, putImageData) {
             _edge[y] = {min: x, max: x};
         }
     });
-    var edge = [];
     for(var y in _edge) {
         edge.push({y: y, x: _edge[y].min});
         edge.push({y: y, x: _edge[y].max});
@@ -147,7 +148,7 @@ var getOrangeEdge = function(canvas, putImageData) {
 
     // mark edges
     edge.map(function(p) {
-        return (p.y * canvas.width + p.x - 1) * 4;
+        return (parseInt(p.y) * canvas.width + parseInt(p.x) - 1) * 4;
     }).forEach(function(p) {
         pixels[p] = 255;
         pixels[p + 1] = 255;
