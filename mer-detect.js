@@ -169,6 +169,8 @@ var getOrangeEdge = function(canvas, putImageData) {
  * Note: Inside this function (0, 0) was located in the center of image
  *       but the return value take left top as (0, 0)
  *
+ * Note: 此算法来自《实验二 水果品质检测与分级方法》
+ *
  * @param {Array} edgePoints - Points of edge
  * @returns {Object} {center, corners, width, height, area, theta}
  */
@@ -194,6 +196,8 @@ var calcMER = function(edgePoints) {
 
     // 旋转坐标系 30 次以获得 30 个矩形
     var rects = Array.apply(null, Array(30)).map(function(_, i, arr) {
+        // 此处 theta 为顺时针旋转的度数
+        // 这里的坐标系方向是按照计算机习惯的右、下为正
         var theta = (Math.PI / 2) * (i / arr.length);
         var _points = points.map(function(p) {
             return {
@@ -227,9 +231,25 @@ var calcMER = function(edgePoints) {
         var corners = [
             {x: left, y: top},
             {x: left, y: bottom},
-            {x: right, y: top},
-            {x: right, y: bottom}
+            {x: right, y: bottom},
+            {x: right, y: top}
         ];
+
+        // 将边角还原到原始角度的坐标系
+        corners = corners.map(function(p) {
+            return {
+                x: p.y * Math.sin(theta) + p.x * Math.cos(theta),
+                y: p.y * Math.cos(theta) - p.x * Math.sin(theta)
+            };
+        });
+
+        // 将边角还原到以 left top 为 (0, 0) 的原始坐标系
+        corners = corners.map(function(p) {
+            return {
+                x: p.x + center.x,
+                y: p.y + center.y
+            };
+        });
 
         var width = Math.max(right - left, bottom - top);
         var height = Math.min(right - left, bottom - top);
@@ -277,12 +297,24 @@ var displayImageWithMER = function(filename) {
 
         var edgePoints = getOrangeEdge(canvas, true);
         var rect = calcMER(edgePoints);
-        console.log(rect);
 
         // draw center
         var center = rect.center;
         ctx.fillStyle = "white";
         ctx.fillRect(center.x - 2, center.y - 2, 4, 4);
+
+        // draw MER
+        var corners = rect.corners;
+        console.log(corners);
+        ctx.strokeStyle = "yellow";
+        ctx.beginPath();
+        ctx.moveTo(corners[0].x, corners[0].y);
+        ctx.lineTo(corners[1].x, corners[1].y);
+        ctx.lineTo(corners[2].x, corners[2].y);
+        ctx.lineTo(corners[3].x, corners[3].y);
+        ctx.lineTo(corners[0].x, corners[0].y);
+        ctx.closePath();
+        ctx.stroke();
     };
 };
 
@@ -293,11 +325,6 @@ for(var i = 1; i <= 10; i++) {
     targets.push(["images", "green", filename].join('/'));
 }
 
-// while(targets.length > 0) {
-//     displayImageWithMER(targets.shift());
-// }
-
-displayImageWithMER(targets.shift());
-displayImageWithMER(targets.shift());
-
-
+while(targets.length > 0) {
+    displayImageWithMER(targets.shift());
+}
