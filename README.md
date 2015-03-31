@@ -4,7 +4,7 @@
 
 ## Demo
 
-http://zenozeng.github.io/orange-mer-detect/
+http://zenozeng.github.io/orange-mer/
 
 因为是直接在浏览器UI线程里计算，而且没有做分片优化，所以有点卡。
 以及，请使用现代浏览器（Chrome / Firefox / 360或者搜狗等浏览器的急速模式）
