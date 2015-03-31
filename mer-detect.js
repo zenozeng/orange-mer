@@ -258,7 +258,7 @@ var calcMER = function(edgePoints) {
         var area = (right - left) * (bottom - top);
 
         return {
-            theta: theta,
+            theta: theta, // 此处的 theta 为将图像顺时针转 theta 度后为 MER 状态
             corners: corners,
             width: width,
             height: height,
