@@ -230,12 +230,13 @@ var calcMER = function(edgePoints) {
         // 设定边角
         var corners = [
             {x: left, y: top},
-            {x: left, y: bottom},
+            {x: right, y: top},
             {x: right, y: bottom},
-            {x: right, y: top}
+            {x: left, y: bottom}
         ];
 
         // 将边角还原到原始角度的坐标系
+        // 下转换关系可以通过将 x', y' 乘以 cos, sin 的四个表达式简单组合得到
         corners = corners.map(function(p) {
             return {
                 x: p.y * Math.sin(theta) + p.x * Math.cos(theta),
@@ -305,10 +306,6 @@ var displayImageWithMER = function(filename) {
 
         // draw MER
         var corners = rect.corners;
-        corners.forEach(function(p) {
-            ctx.fillRect(p.x - 2, p.y - 2, 4, 4);
-        });
-        console.log(corners);
         ctx.strokeStyle = "yellow";
         ctx.beginPath();
         ctx.moveTo(corners[0].x, corners[0].y);
@@ -318,6 +315,12 @@ var displayImageWithMER = function(filename) {
         ctx.lineTo(corners[0].x, corners[0].y);
         ctx.closePath();
         ctx.stroke();
+
+        // highlight corners
+        corners.forEach(function(p, i) {
+            ctx.fillStyle = ["red", "green", "yellow", "blue"][i];
+            ctx.fillRect(p.x - 2, p.y - 2, 4, 4);
+        });
 
         // display info
         var div = document.createElement('pre');
