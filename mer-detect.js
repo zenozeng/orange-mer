@@ -119,6 +119,7 @@ var getOrangeEdge = function(canvas, putImageData) {
         }
     });
     for(var y in _edge) {
+        y = parseInt(y);
         edge.push({y: y, x: _edge[y].min});
         edge.push({y: y, x: _edge[y].max});
     }
@@ -140,6 +141,7 @@ var getOrangeEdge = function(canvas, putImageData) {
         }
     });
     for(var x in _edge) {
+        x = parseInt(x);
         edge.push({x: x, y: _edge[x].min});
         edge.push({x: x, y: _edge[x].max});
     }
@@ -163,20 +165,98 @@ var getOrangeEdge = function(canvas, putImageData) {
 
 
 /**
- * Calculate MER in given canvas
- * Note: (0, 0) was located in the center of image
+ * Calculate MER in given edgePoints
+ * Note: Inside this function (0, 0) was located in the center of image
+ *       but the return value take left top as (0, 0)
  *
- * @param {Canvas} canvas - The canvas to calcuate MER
- * @returns {Array} Four points indicate MER
+ * @param {Array} edgePoints - Points of edge
+ * @returns {Object} {center, corners, width, height, area, theta}
  */
 var calcMER = function(edgePoints) {
-    // Init
-    var ctx = canvas.getContext('2d');
 
-    var left = 1,
-        right = -1,
-        top = 1,
-        bottom = -1;
+    // 计算中心点
+    var center = {x: 0, y: 0};
+    edgePoints.forEach(function(p) {
+        center.x += p.x;
+        center.y += p.y;
+    });
+    center.x /= edgePoints.length;
+    center.y /= edgePoints.length;
+
+    // 移动到新坐标系：以中心点为 (0, 0)
+    // 保持向右、向下为正
+    var points = edgePoints.map(function(p) {
+        return {
+            x: p.x - center.x,
+            y: p.y - center.y
+        };
+    });
+
+    // 旋转坐标系 30 次以获得 30 个矩形
+    var rects = Array.apply(null, Array(30)).map(function(_, i, arr) {
+        var theta = (Math.PI / 2) * (i / arr.length);
+        var _points = points.map(function(p) {
+            return {
+                x: p.x * Math.cos(theta) - p.y * Math.sin(theta),
+                y: p.x * Math.sin(theta) + p.y * Math.cos(theta)
+            };
+        });
+
+        // 计算边界
+        var left = 0,
+            right = 0,
+            top = 0,
+            bottom = 0;
+
+        _points.forEach(function(p) {
+            if (p.x < left) {
+                left = p.x;
+            }
+            if (p.x > right) {
+                right = p.x;
+            }
+            if (p.y < top) {
+                top = p.y;
+            }
+            if (p.y > bottom) {
+                bottom = p.y;
+            }
+        });
+
+        // 设定边角
+        var corners = [
+            {x: left, y: top},
+            {x: left, y: bottom},
+            {x: right, y: top},
+            {x: right, y: bottom}
+        ];
+
+        var width = Math.max(right - left, bottom - top);
+        var height = Math.min(right - left, bottom - top);
+
+        var area = (right - left) * (bottom - top);
+
+        return {
+            theta: theta,
+            corners: corners,
+            width: width,
+            height: height,
+            area: area
+        };
+    });
+
+    var minArea = Infinity;
+    var rect = null;
+    rects.forEach(function(_rect) {
+        if (_rect.area < minArea) {
+            minArea = _rect.area;
+            rect = _rect;
+        }
+    });
+
+    rect.center = center;
+
+    return rect;
 };
 
 /**
@@ -194,7 +274,15 @@ var displayImageWithMER = function(filename) {
     image.onload = function() {
         var ctx = canvas.getContext('2d');
         ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+
         var edgePoints = getOrangeEdge(canvas, true);
+        var rect = calcMER(edgePoints);
+        console.log(rect);
+
+        // draw center
+        var center = rect.center;
+        ctx.fillStyle = "white";
+        ctx.fillRect(center.x - 2, center.y - 2, 4, 4);
     };
 };
 
