@@ -305,7 +305,6 @@ var displayImageWithMER = function(filename) {
 
         // draw MER
         var corners = rect.corners;
-        console.log(corners);
         ctx.strokeStyle = "yellow";
         ctx.beginPath();
         ctx.moveTo(corners[0].x, corners[0].y);
@@ -315,6 +314,13 @@ var displayImageWithMER = function(filename) {
         ctx.lineTo(corners[0].x, corners[0].y);
         ctx.closePath();
         ctx.stroke();
+
+        // display info
+        var div = document.createElement('pre');
+        delete rect.corners;
+        rect.theta = rect.theta / Math.PI * 180 + "°";
+        div.innerHTML = JSON.stringify(rect, null, 4);
+        document.body.insertBefore(div, canvas);
     };
 };
 
